@@ -89,6 +89,35 @@ class PasswordGrantTest extends PassportTestCase
         $this->assertSame(['*'], $json['oauth_scopes']);
     }
 
+    public function testRefreshingTokenWithAllScopes()
+    {
+        $client = ClientFactory::new()->asPasswordClient()->create();
+        $user = UserFactory::new()->create();
+
+        $oldToken = $this->post('/oauth/token', [
+            'grant_type' => 'password',
+            'client_id' => $client->getKey(),
+            'client_secret' => $client->plainSecret,
+            'username' => $user->email,
+            'password' => 'password',
+            'scope' => '*',
+        ])->assertOk()->json();
+
+        $newToken = $this->post('/oauth/token', [
+            'grant_type' => 'refresh_token',
+            'client_id' => $client->getKey(),
+            'client_secret' => $client->plainSecret,
+            'refresh_token' => $oldToken['refresh_token'],
+        ])->assertOk()->json();
+
+        Route::get('/foo', fn (Request $request) => $request->user()->currentAccessToken()->toJson())
+            ->middleware('auth:api');
+
+        $json = $this->withToken($newToken['access_token'], $newToken['token_type'])->get('/foo')->json();
+
+        $this->assertSame(['*'], $json['oauth_scopes']);
+    }
+
     public function testIssueTokenWithDifferentProviders()
     {
         $client = ClientFactory::new()->asPasswordClient()->create();

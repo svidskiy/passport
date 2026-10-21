@@ -39,7 +39,7 @@ class ScopeRepository implements ScopeRepositoryInterface
         ?string $authCodeId = null
     ): array {
         return collect($scopes)
-            ->unless(in_array($grantType, ['password', 'personal_access', 'client_credentials']),
+            ->unless(in_array($grantType, ['password', 'personal_access', 'client_credentials', 'refresh_token']),
                 fn (Collection $scopes): Collection => $scopes->reject(
                     fn (ScopeEntityInterface $scope): bool => $scope->getIdentifier() === '*'
                 )
